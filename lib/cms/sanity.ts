@@ -15,6 +15,11 @@ export async function getPosts(): Promise<Post[]> {
   return mockPosts;
 }
 
+export async function updatePost(): Promise<Post[]> {
+  return mockPosts;
+}
+
+
 export async function createPost(data: Post) {
   mockPosts.push({ ...data, id: Date.now().toString() });
 }

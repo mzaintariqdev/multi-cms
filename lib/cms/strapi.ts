@@ -22,3 +22,6 @@ export async function createPost(data: Post) {
 export async function deletePost(id: string) {
   mockPosts = mockPosts.filter((p) => p.id !== id);
 }
+export async function updatePost(): Promise<Post[]> {
+  return mockPosts;
+}

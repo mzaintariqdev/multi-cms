@@ -1,5 +1,5 @@
-// lib/contentful.ts - COMPLETE FIXED VERSION
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// lib/cms/contentful.ts
 import { GraphQLClient, gql } from "graphql-request";
 import { createClient } from 'contentful-management';
 import { Post } from "@/types/post";
@@ -14,7 +14,6 @@ const MANAGEMENT_TOKEN = process.env.CONTENTFUL_MANAGEMENT_TOKEN!;
 
 /**
  * Helper: Creates a GraphQL Client
- * This ensures the client is always configured with the latest ENV values
  */
 const getGqlClient = () => {
   return new GraphQLClient(
@@ -27,33 +26,8 @@ const getGqlClient = () => {
   );
 };
 
-/**
- * ✅ FIXED: Helper for Management Client (CMA)
- * Only works on the Server
- */
-const getManagementClient = () => {
-  if (typeof window !== 'undefined') {
-    throw new Error("Management Client cannot be used in the browser!");
-  }
-  
-  // ✅ CORRECT: For plain client, pass options in the first argument
-  return createClient(
-    {
-      accessToken: MANAGEMENT_TOKEN,
-      // These defaults go here for plain client
-    },
-    {
-      type: 'plain',
-      defaults: {
-        spaceId: SPACE_ID,
-        environmentId: ENVIRONMENT,
-      },
-    }
-  );
-};
-
 // -------------------------
-// GET POSTS (Delivery API) - ✅ WORKING
+// GET POSTS (Delivery API)
 // -------------------------
 export async function getPosts(): Promise<Post[]> {
   const client = getGqlClient();
@@ -93,20 +67,17 @@ export async function getPosts(): Promise<Post[]> {
 }
 
 // -------------------------
-// CREATE POST (Management API) - ✅ WORKING (but can be improved)
+// CREATE POST (Management API)
 // -------------------------
 export async function createPost(post: any) {
-  // Check if running on server
   if (typeof window !== 'undefined') {
     throw new Error("createPost must be called from server-side only!");
   }
 
   console.log("--- CREATING POST ---");
-  console.log("SPACE_ID:", SPACE_ID);
-  console.log("MANAGEMENT_TOKEN exists:", !!MANAGEMENT_TOKEN);
-  console.log("Token prefix:", MANAGEMENT_TOKEN?.substring(0, 7));
+  console.log("Title:", post.title);
+  console.log("Slug:", post.slug);
 
-  // ✅ FIXED: Use consistent client initialization
   const client = createClient(
     { accessToken: MANAGEMENT_TOKEN },
     {
@@ -134,7 +105,6 @@ export async function createPost(post: any) {
   };
 
   try {
-    // Create the entry
     const entry = await client.entry.create(
       { contentTypeId: 'post' },
       {
@@ -148,8 +118,6 @@ export async function createPost(post: any) {
     );
 
     console.log("Entry created:", entry.sys.id);
-
-    // Publish the entry
     await client.entry.publish({ entryId: entry.sys.id }, entry);
     console.log("Entry published:", entry.sys.id);
 
@@ -161,80 +129,16 @@ export async function createPost(post: any) {
 }
 
 // -------------------------
-// ✅ FIXED: DELETE POST (Management API)
-// -------------------------
-export async function deletePost(id: string) {
-  // Check if running on server
-  if (typeof window !== 'undefined') {
-    throw new Error("deletePost must be called from server-side only!");
-  }
-
-  console.log("--- DELETING POST ---");
-  console.log("Post ID to delete:", id);
-  console.log("SPACE_ID:", SPACE_ID);
-  console.log("ENVIRONMENT:", ENVIRONMENT);
-  
-  try {
-    // ✅ FIXED: Create client INSIDE the function (not using getManagementClient)
-    const client = createClient(
-      { accessToken: MANAGEMENT_TOKEN },
-      {
-        type: 'plain',
-        defaults: {
-          spaceId: SPACE_ID,
-          environmentId: ENVIRONMENT,
-        },
-      }
-    );
-
-    // Step 1: Get the entry first to check its status
-    console.log("Fetching entry...");
-    const entry = await client.entry.get({ entryId: id });
-    console.log("Entry found:", entry.sys.id);
-    console.log("Is published?", !!entry.sys.publishedAt);
-
-    // Step 2: Unpublish if it's published
-    if (entry.sys.publishedAt) {
-      console.log("Unpublishing entry...");
-      await client.entry.unpublish({ entryId: id });
-      console.log("Entry unpublished");
-    }
-
-    // Step 3: Delete the entry
-    console.log("Deleting entry...");
-    await client.entry.delete({ entryId: id });
-    console.log("Entry deleted successfully!");
-    
-    return { success: true };
-  } catch (error: any) {
-    console.error("Delete post error details:", {
-      message: error.message,
-      status: error.status,
-      details: error.details,
-      stack: error.stack
-    });
-    
-    // Handle specific error cases
-    if (error.status === 401) {
-      throw new Error("Authentication failed: Invalid or missing Management Token");
-    } else if (error.status === 404) {
-      throw new Error(`Post with ID ${id} not found`);
-    } else {
-      throw new Error(`Failed to delete post: ${error.message}`);
-    }
-  }
-}
-
-// -------------------------
-// ✅ ADDED: UPDATE POST (Management API)
+// ✅ UPDATE POST TITLE ONLY (Management API)
 // -------------------------
 export async function updatePost(id: string, post: any) {
   if (typeof window !== 'undefined') {
     throw new Error("updatePost must be called from server-side only!");
   }
 
-  console.log("--- UPDATING POST ---");
+  console.log("--- UPDATING POST TITLE ---");
   console.log("Post ID:", id);
+  console.log("New Title:", post.title);
   
   try {
     const client = createClient(
@@ -251,21 +155,9 @@ export async function updatePost(id: string, post: any) {
     // Get the existing entry
     const entry = await client.entry.get({ entryId: id });
     
-    // Update fields
-    if (post.title) entry.fields.title = { "en-US": post.title };
-    if (post.slug) entry.fields.slug = { "en-US": post.slug };
-    if (post.excerpt) entry.fields.excerpt = { "en-US": post.excerpt };
-    if (post.body) {
-      const richTextBody = {
-        nodeType: "document",
-        data: {},
-        content: [{
-          nodeType: "paragraph",
-          data: {},
-          content: [{ nodeType: "text", value: post.body, marks: [], data: {} }]
-        }]
-      };
-      entry.fields.body = { "en-US": richTextBody };
+    // ✅ ONLY update the title field (ignore other fields)
+    if (post.title) {
+      entry.fields.title = { "en-US": post.title };
     }
 
     // Update the entry
@@ -276,10 +168,64 @@ export async function updatePost(id: string, post: any) {
       await client.entry.publish({ entryId: id }, updatedEntry);
     }
     
-    console.log("Entry updated successfully!");
+    console.log("Title updated successfully!");
     return updatedEntry.sys.id;
+    
   } catch (error: any) {
     console.error("Update post error:", error);
     throw new Error(`Failed to update post: ${error.message}`);
+  }
+}
+
+// -------------------------
+// DELETE POST (Management API)
+// -------------------------
+export async function deletePost(id: string) {
+  if (typeof window !== 'undefined') {
+    throw new Error("deletePost must be called from server-side only!");
+  }
+
+  console.log("--- DELETING POST ---");
+  console.log("Post ID to delete:", id);
+  
+  try {
+    const client = createClient(
+      { accessToken: MANAGEMENT_TOKEN },
+      {
+        type: 'plain',
+        defaults: {
+          spaceId: SPACE_ID,
+          environmentId: ENVIRONMENT,
+        },
+      }
+    );
+
+    // Get the entry first
+    const entry = await client.entry.get({ entryId: id });
+    console.log("Entry found, published:", !!entry.sys.publishedAt);
+
+    // Unpublish if published
+    if (entry.sys.publishedAt) {
+      console.log("Unpublishing entry...");
+      await client.entry.unpublish({ entryId: id });
+    }
+
+    // Delete the entry
+    console.log("Deleting entry...");
+    await client.entry.delete({ entryId: id });
+    console.log("Entry deleted successfully!");
+    
+    return { success: true };
+    
+  } catch (error: any) {
+    console.error("Delete post error:", error);
+    
+    if (error.status === 401) {
+      throw new Error("Authentication failed: Invalid or missing Management Token");
+    } else if (error.status === 404) {
+      throw new Error(`Post with ID ${id} not found`);
+    } else {
+      throw new Error(`Failed to delete post: ${error.message}`);
+    }
   }
 }
