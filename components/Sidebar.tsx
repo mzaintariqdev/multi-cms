@@ -3,14 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const cmsList = ["contentful", "sanity", "strapi", "storyblok"];
+const cmsList = ["contentful", "sanity",
+  //  "strapi", "storyblok"
+  ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-800">
+       <Link href="/">
       <div className="p-6 font-bold text-2xl text-blue-600 dark:text-blue-400">Multi CMS</div>
+       </Link>
       <nav className="flex flex-col flex-1">
         {cmsList.map((cms) => (
           <Link

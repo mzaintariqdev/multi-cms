@@ -6,8 +6,8 @@ import Sidebar from "@/components/Sidebar";
 const cmsList = [
   { name: "contentful", color: "bg-blue-500" },
   { name: "sanity", color: "bg-red-500" },
-  { name: "strapi", color: "bg-purple-500" },
-  { name: "storyblok", color: "bg-green-500" },
+  // { name: "strapi", color: "bg-purple-500" },
+  // { name: "storyblok", color: "bg-green-500" },
 ];
 
 export default function Home() {
