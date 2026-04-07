@@ -4,6 +4,8 @@
 
 A **Next.js application** demonstrating integration of **multiple headless CMS platforms**—**Sanity** and **Contentful**—for CRUD operations. Built as a **learning and practice project**, this app covers topics such as **React Query**, **REST API**, **GraphQL**, and advanced CMS workflows in a single unified interface.
 
+Hosted here: https://multi-cms-liart.vercel.app/
+
 ---
 
 ## Table of Contents
