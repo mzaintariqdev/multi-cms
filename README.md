@@ -73,8 +73,8 @@ The purpose of **Multi CMS Manager** is to practice and demonstrate:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/multi-cms-manager.git
-cd multi-cms-manager
+git clone https://github.com/mzaintariqdev/multi-cms.git
+cd multi-cms
 ```
 2. Now move to root directory and run
 ```bash
